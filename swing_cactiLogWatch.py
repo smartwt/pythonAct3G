@@ -9,7 +9,7 @@ import logging
 import logging.handlers
 
 #分単位(TRAP送信間隔)
-ALERT_TERM=60
+ALERT_TERM=59
 
 #status -1:障害 0:正常 9:トラップストップ 
 OUTFNAME="SWING_CACTILOGCHECK"
@@ -18,7 +18,6 @@ LOGFILE="/root/swing_cactiLogWatch.log"
 
 NAME='%s' % os.uname()[1]
 COMM="/usr/bin/snmptrap -v 1 -c public 192.168.41.214 1.3.6.1.4.1.9999 localhost 6 1 \'\' 1.3.6.1.4.1.9999.1 s \"" + NAME + " " + CACTI_LOG_PATH
-#COMM="/usr/bin/snmptrap -v 1 -c public 192.168.12.174 1.3.6.1.4.1.9999 localhost 6 1 \'\' 1.3.6.1.4.1.9999.1 s \"" + NAME + " " + CACTI_LOG_PATH
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -49,9 +48,10 @@ def readfile() :
 			try:
 				status, alerttime = line[:-1].split('\t')
 			except ValueError:
-				print OUTFNAME + " CSV Illegal Data Format"
+				print OUTFNAME + " CSV Illegal Data Format:" + __file__
 				logger.error( OUTFNAME + " CSV Illegal Data Format")
-			return status,alerttime
+
+	return status,alerttime
 
 #ファイル書き込み
 def writefile(str):
@@ -64,7 +64,7 @@ def writefile(str):
 #開始
 
 #指定のログファイルの更新がされているかチェックを行う
-proc = subprocess.Popen('/usr/bin/find ' + CACTI_LOG_PATH + ' -type f -mmin +6',shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+proc = subprocess.Popen('/usr/bin/find ' + CACTI_LOG_PATH + ' -type f -mmin +15',shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 out,err = proc.communicate()
 
 #正常に更新されていたらoutは空
@@ -72,8 +72,9 @@ if out == "":
 
 	#errに文字列が入っていたときはエラー
 	if err != "":
-		print " find Command Error! " + err
-		sys.exit(-1)
+		print __file__ + ": find Command Error! " + err
+		logger.error( " find Command Error! " + err )
+		#sys.exit(-1)
 
 	#異常時からの復旧の場合復旧トラップ出力
 	if os.path.exists(OUTFNAME):
@@ -81,17 +82,20 @@ if out == "":
 		
 		#正常時(何もせず終了)
 		if status == "0":
-			print "In Operating !"
-			logger.error( "In Operating !")
+			print __file__ + ":In Operating !"
+			logger.info( "In Operating !")
 
 		#前回エラー時
 		elif status == "-1":
+
+			print __file__ + ": Alert Recover  !! "
+			logger.info( " Alert Recover  !! ")
+
 			#フラグファイルが既に存在したら復旧アラーム出力
 			COMMMSG = COMM + "--------- RECOVER cacti.log update start !---------\""
 			
 			subprocess.call(COMMMSG,shell=True)
-			print " Alert Recover  !! "
-			
+
 			nowtime=datetime.datetime.now()
 			nowstr = nowtime.strftime('%Y-%m-%d %H:%M:%S')
 			
@@ -103,16 +107,27 @@ if out == "":
 
 		#メンテナンス時
 		elif status == "9":
-			print "Under a Mentenance."
+			print __file__ + ": Under a Mentenance."
+			logger.warning( "Under a Mentenance.")
 
 		#ファイル形式エラー
 		else:
+			print OUTFNAME + " File Format Error !!:" + __file__
 			logger.error( OUTFNAME + " File Format Error !!")
-			print OUTFNAME + " File Format Error !!"
-			sys.exit(-1)
+			#sys.exit(-1)
 			
-		sys.exit()
-		
+		#sys.exit()
+	else:
+		print __file__ + ":In Operating !"
+		logger.info( "In Operating !")
+		nowtime=datetime.datetime.now()
+		nowstr = nowtime.strftime('%Y-%m-%d %H:%M:%S')
+
+		#正常は0
+		str = '0' + '\t' + nowstr
+
+		#ファイルに書き込む
+		ret = writefile(str)	
 else:
 	#ファイルを読込
 	status,alerttime = readfile()
@@ -121,11 +136,12 @@ else:
 	#フラグファイルの値取得エラー時
 	if status is None or status == "" :
 
+		print __file__ + ":cacti.log First Alert Trap !! "
+		logger.error( "First Alert Trap !! ")
+
 		#フラグファイルが空の時は無条件にトラップ出力
 		COMMMSG = COMM + " =========FIRST TIME cacti.log Update Stopped !=========\""
 		subprocess.call(COMMMSG,shell=True)
-		print "cacti.log First Alert Trap !! "
-		logger.error( "First Alert Trap !! ")
 
 		#現在時間の取得
 		nowtime=datetime.datetime.now()
@@ -140,11 +156,13 @@ else:
 	#初回エラー時
 	elif status == "0":
 
+		print __file__ + ":cacti.log First Alert Trap !! "
+		logger.error( "First Alert Trap !! ")
+
 		#フラグファイルが空の時は無条件にトラップ出力
 		COMMMSG = COMM + " =========FIRST TIME cacti.log Update Stopped !=========\""
 		subprocess.call(COMMMSG,shell=True)
-		print "First Alert Trap !! "
-		logger.error( "First Alert Trap !! ")
+
 		#現在時間の取得
 		nowtime=datetime.datetime.now()
 		nowstr = nowtime.strftime('%Y-%m-%d %H:%M:%S')
@@ -172,22 +190,26 @@ else:
 		#アラート時間のほうが前であればアラートを表示する
 		if now_old_time >= alerttimeob :
 
+			print __file__ + ":REPEAT Alert Trap Return!! "
+			logger.error( "REPEAT Alert Trap Return!! ")
+
 			#トラップ出力
 			COMMMSG = COMM + " =========REPEAT cacti.log Update Stopped !=========\""
 			subprocess.call(COMMMSG,shell=True)
-			print "REPEAT Alert Trap Return!! "
-			logger.error( "REPEAT Alert Trap Return!! ")
 
 			nowstr = nowtime.strftime('%Y-%m-%d %H:%M:%S')
 			str = '-1\t' + nowstr
 			#フラグファイルに書き込む
 			writefile(str)
 		else:
-			print "Alert but less than reguration time."
+			print __file__ + ":Alert but less than reguration time."
+			logger.warning( "Alert but less than reguration time.")
+
 	#トラップストップ
 	elif status == "9":
-		print "Under a Mentenance."
-
+		print __file__ + ":Under a Mentenance."
+		logger.warning( "Under a Mentenance.")
 	else:
-		print OUTFNAME + " File Format Error !!"
-		sys.exit(-1)
+		print OUTFNAME + " File Format Error !!:" + __file__
+		logger.error( OUTFNAME + " File Format Error !!")
+		#sys.exit(-1)
