@@ -11,13 +11,18 @@ import logging.handlers
 #分単位(TRAP送信間隔)
 ALERT_TERM=59
 
+#更新停止時間
+STOP_TIME=30
+
 #status -1:障害 0:正常 9:トラップストップ 
 OUTFNAME="SWING_CACTILOGCHECK"
 CACTI_LOG_PATH="/usr/local/apache2/htdocs/cacti/log/cacti.log"
+CACTI_LOG_PATH="/root/log.log"
 LOGFILE="/root/swing_cactiLogWatch.log"
 
 NAME='%s' % os.uname()[1]
 COMM="/usr/bin/snmptrap -v 1 -c public 192.168.41.214 1.3.6.1.4.1.9999 localhost 6 1 \'\' 1.3.6.1.4.1.9999.1 s \"" + NAME + " " + CACTI_LOG_PATH
+COMM="/usr/bin/snmptrap -v 1 -c public 192.168.12.174 1.3.6.1.4.1.9999 localhost 6 1 \'\' 1.3.6.1.4.1.9999.1 s \"" + NAME + " " + CACTI_LOG_PATH
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -64,7 +69,7 @@ def writefile(str):
 #開始
 
 #指定のログファイルの更新がされているかチェックを行う
-proc = subprocess.Popen('/usr/bin/find ' + CACTI_LOG_PATH + ' -type f -mmin +15',shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+proc = subprocess.Popen('/usr/bin/find ' + CACTI_LOG_PATH + ' -type f -mmin +' + str(STOP_TIME),shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 out,err = proc.communicate()
 
 #正常に更新されていたらoutは空
@@ -136,11 +141,12 @@ else:
 	#フラグファイルの値取得エラー時
 	if status is None or status == "" :
 
-		print __file__ + ":cacti.log First Alert Trap !! "
-		logger.error( "First Alert Trap !! ")
+		print __file__ + ":cacti.log First Alert Trap " + str(STOP_TIME) + " minutes !!"
+		logger.error( "First Alert Trap Stop " + str(STOP_TIME) + " minutes !! ")
+
 
 		#フラグファイルが空の時は無条件にトラップ出力
-		COMMMSG = COMM + " =========FIRST TIME cacti.log Update Stopped !=========\""
+		COMMMSG = COMM + " =========FIRST TIME cacti.log Update Stopped " + str(STOP_TIME) + " minutes !=========\""
 		subprocess.call(COMMMSG,shell=True)
 
 		#現在時間の取得
@@ -156,11 +162,12 @@ else:
 	#初回エラー時
 	elif status == "0":
 
-		print __file__ + ":cacti.log First Alert Trap !! "
-		logger.error( "First Alert Trap !! ")
+		print __file__ + ":cacti.log First Alert Trap " + str(STOP_TIME) + " minutes !!"
+		logger.error( "First Alert Trap Stop " + str(STOP_TIME) + " minutes !! ")
+
 
 		#フラグファイルが空の時は無条件にトラップ出力
-		COMMMSG = COMM + " =========FIRST TIME cacti.log Update Stopped !=========\""
+		COMMMSG = COMM + " =========FIRST TIME cacti.log Update Stopped " + str(STOP_TIME) + " minutes !=========\""
 		subprocess.call(COMMMSG,shell=True)
 
 		#現在時間の取得

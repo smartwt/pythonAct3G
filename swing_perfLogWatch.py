@@ -11,6 +11,9 @@ import logging.handlers
 #分単位
 ALERT_TERM=59
 
+#更新停止時間
+STOP_TIME=30
+
 #status -1:障害 0:正常 9:トラップストップ 
 OUTFNAME="SWING_PERFLOGCHECK"
 
@@ -21,6 +24,7 @@ LOGFILE="/root/swing_perfLogWatch.log"
 
 NAME='%s' % os.uname()[1]
 COMM="/usr/bin/snmptrap -v 1 -c public 192.168.41.214 1.3.6.1.4.1.9999 localhost 6 1 \'\' 1.3.6.1.4.1.9999.1 s \"" + NAME + " " + PERF_LOG_PATH
+COMM="/usr/bin/snmptrap -v 1 -c public 192.168.12.174 1.3.6.1.4.1.9999 localhost 6 1 \'\' 1.3.6.1.4.1.9999.1 s \"" + NAME + " " + PERF_LOG_PATH
 
 #ログローテーションの設定
 logger = logging.getLogger()
@@ -84,7 +88,7 @@ outResult = getCluster()
 if '[ACT]' in outResult:
 
 	#指定のログファイルの更新がされているかチェックを行う
-	proc = subprocess.Popen('/usr/bin/find ' + PERF_LOG_PATH + ' -type f -mmin +30',shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+	proc = subprocess.Popen('/usr/bin/find ' + PERF_LOG_PATH + ' -type f -mmin +' + str(STOP_TIME),shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 	out,err = proc.communicate()
 
 	#正常に更新されていたらoutは空
@@ -169,11 +173,11 @@ if '[ACT]' in outResult:
 		#フラグファイルの値取得エラー時
 		if status is None or status == "" :
 
-			print __file__ + ":perf.log First Alert Trap !!"
-			logger.error( "First Alert Trap !! ")
+			print __file__ + ":perf.log First Alert Trap " + str(STOP_TIME) + " minutes !!"
+			logger.error( "First Alert Trap Stop " + str(STOP_TIME) + " minutes !! ")
 
 			#フラグファイルが空の時は無条件にトラップ出力
-			COMMMSG = COMM + " =========FIRST TIME Swing_perf.log Update Stopped !=========\""
+			COMMMSG = COMM + " =========FIRST TIME Swing_perf.log Update Stopped " + str(STOP_TIME) + " minutes !=========\""
 			subprocess.call(COMMMSG,shell=True)
 
 			#現在時間の取得
@@ -189,11 +193,11 @@ if '[ACT]' in outResult:
 		#初回エラー時 Standby時
 		elif status == "0" or status == "1":
 
-			print __file__ + ": perf.log First Alert Trap !!"
-			logger.error( "First Alert Trap !! ")
+			print __file__ + ":perf.log First Alert Trap " + str(STOP_TIME) + " minutes !!"
+			logger.error( "First Alert Trap Stop " + str(STOP_TIME) + " minutes !! ")
 
 			#フラグファイルが空の時は無条件にトラップ出力
-			COMMMSG = COMM + " =========FIRST TIME Swing_perf.log Update Stopped !=========\""
+			COMMMSG = COMM + " =========FIRST TIME Swing_perf.log Update Stopped " + str(STOP_TIME) + " minutes !=========\""
 			subprocess.call(COMMMSG,shell=True)
 
 			#現在時間の取得
