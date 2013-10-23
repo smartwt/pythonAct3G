@@ -261,7 +261,7 @@ else:
 		print __file__ + ":Standby Status."
 		logger.info("Standby Status.")
 
-       		nowtime=datetime.datetime.now()
+       	nowtime=datetime.datetime.now()
 		nowstr = nowtime.strftime('%Y-%m-%d %H:%M:%S')
 		#待機系の場合は1を書込む
 		str = '1\t' + nowstr
