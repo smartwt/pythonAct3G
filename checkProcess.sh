@@ -1,8 +1,13 @@
 #!/bin/bash
+
 `export LANG=ja_JP.utf8`
-PROCESSLIST="/home/swing/psCheck/processlist"
-PIDFILEPATH="/home/swing/psCheck/pidlog"
-TMPFILE="/home/swing/psCheck/tmpdata"
+NAME=`hostname`
+PROCESSLIST="processlist"
+PIDFILEPATH="pidlog"
+TMPFILE="tmpdata"
+
+SNMPTRAP="/usr/bin/snmptrap -v 1 -c public 192.168.12.174 1.3.6.1.4.1.9999 localhost 6 1 '' 1.3.6.1.4.1.9999.1 s "
+
 i=0
 lcnt=0
 HAND=0
@@ -74,6 +79,7 @@ do
 							#前回のチェックで2件以上起動していた場合はログ出力
 							if [ $HAND != 1 ]; then
 								`/usr/bin/logger -i ProcessCheck -p user.err "[ ${shortName} ] ########  The process count is changed!!  ######## ORG:${logcount}  NEW:1" `
+								eval "$SNMPTRAP \"${NAME} [ ${shortName} ] ########  The process count is changed!!  ######## ORG:${logcount}  NEW:1\""
 							fi
 						fi
 					fi
@@ -142,6 +148,8 @@ do
 								#手動実行の時はログを飛ばさない
 								if [ $HAND != 1 ]; then 
 									`/usr/bin/logger -i ProcessCheck -p user.err "[ ${shortName} ] ########  The process count is changed!!  ######## ORG:${logcount}  NEW:${GYOU}" `
+									eval "$SNMPTRAP \"${NAME} [ ${shortName} ] ########  The process count is changed!!  ######## ORG:${logcount}  NEW:${GYOU}\""
+
 								fi
 								break
 							fi
@@ -171,6 +179,7 @@ do
 							#手動実行の時はログを飛ばさない
 							if [ $HAND != 1 ]; then 
 								`/usr/bin/logger -i ProcessCheck -p user.err "[ ${shortName} ] ########  The process count is changed!!  ######## ORG:1  NEW:${GYOU}" `
+								eval "$SNMPTRAP \"${NAME} [ ${shortName} ] ########  The process count is changed!!  ######## ORG:1  NEW:${GYOU}\""
 							fi
 							break
 
@@ -205,7 +214,8 @@ do
 	    
 	    #ログに出力 
 		if [ $HAND != 1 ]; then 
-	        `/usr/bin/logger -i ProcessCheck -p user.err "[ ${shortName} ] ########  ProcessError  ########" `
+	        	`/usr/bin/logger -i ProcessCheck -p user.err "[ ${shortName} ] ########  ProcessError  ########" `
+				eval "$SNMPTRAP \"${NAME} [ ${shortName} ] ########  ProcessError  ########\""
 	    fi
     fi
 
