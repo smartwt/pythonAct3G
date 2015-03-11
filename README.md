@@ -1,0 +1,2 @@
+# pythonAct3G
+Pythonによるシェル
