@@ -6,6 +6,10 @@ PROCESSLIST="processlist"
 PIDFILEPATH="pidlog"
 TMPFILE="tmpdata"
 
+<<<<<<< HEAD
+=======
+SNMPTRAP="/usr/bin/snmptrap -v 1 -c public 192.168.41.214 1.3.6.1.4.1.9999 localhost 6 1 '' 1.3.6.1.4.1.9999.1 s "
+>>>>>>> edcd46da272ed5f8df177fcdc8367a77f62bc2c9
 SNMPTRAP="/usr/bin/snmptrap -v 1 -c public 192.168.12.174 1.3.6.1.4.1.9999 localhost 6 1 '' 1.3.6.1.4.1.9999.1 s "
 
 i=0
